@@ -255,7 +255,15 @@ def build_declaration_index(units: List[Unit]) -> Dict[str, List[DeclSite]]:
                     DeclSite(var, uidx, line_of_offset(src, ent_abs_off), ent.strip())
                 )
     return idx
-
+def extract_line_of_match(code: str, start: int) -> str:
+    lines = code.split("\n")
+    pos = 0
+    for ln, text in enumerate(lines):
+        next_pos = pos + len(text) + 1
+        if pos <= start < next_pos:
+            return text.strip()
+        pos = next_pos
+    return ""
 # ========= Packaging helpers =========
 def pack_issue(unit: Unit, issue_type, message, severity, start, end, suggestion, meta=None):
     src = unit.code or ""
@@ -272,7 +280,8 @@ def pack_issue(unit: Unit, issue_type, message, severity, start, end, suggestion
         "line": line_of_offset(src, start),
         "message": message,
         "suggestion": suggestion or "",
-        "snippet": snippet_at(src, start, end),
+        "snippet": extract_line_of_match(src, start),
+        # "snippet": snippet_at(src, start, end),
         "meta": meta or {}
     }
 
