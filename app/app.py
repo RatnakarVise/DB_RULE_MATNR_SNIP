@@ -27,6 +27,7 @@ class Finding(BaseModel):
     snippet: Optional[str] = None
     meta: Optional[Dict[str, Any]] = None
 
+
 class Unit(BaseModel):
     pgm_name: str
     inc_name: str
@@ -39,37 +40,44 @@ class Unit(BaseModel):
     # optional input; we always produce our own findings
     matnr_findings: Optional[List[Finding]] = None
 
+
 # ========= Regex Knowledge (MATNR focus) =========
 # Declarations
 DECL_CHAR_LEN_PAREN = re.compile(
     r"\b(DATA|CONSTANTS|FIELD-SYMBOLS|PARAMETERS|STATICS)\b[^.\n]*?\b(\w+)\b\s*\((\d+)\)\s*TYPE\s*C\b",
     re.IGNORECASE
 )
-DECL_CHAR_LEN_EXPL  = re.compile(
+DECL_CHAR_LEN_EXPL = re.compile(
     r"\b(DATA|CONSTANTS|FIELD-SYMBOLS|PARAMETERS|STATICS)\b[^.\n]*?\b(\w+)\b\s*TYPE\s*C\b[^.\n]*?\bLENGTH\b\s*(\d+)",
     re.IGNORECASE
 )
-DECL_TYPE_MATNR     = re.compile(
+DECL_TYPE_MATNR = re.compile(
     r"\b(DATA|PARAMETERS|STATICS)\b[^.\n]*?\b(\w+)\b\s*TYPE\s+matnr\b",
     re.IGNORECASE
 )
-DECL_LIKE_MATNR     = re.compile(
+DECL_LIKE_MATNR = re.compile(
     r"\b(DATA|PARAMETERS|STATICS)\b[^.\n]*?\b(\w+)\b\s*(LIKE|TYPE)\s+.*?-?matnr\b",
     re.IGNORECASE
 )
 
 # Usage
-MATNR_COMPON          = re.compile(r"\b(\w+)-matnr\b", re.IGNORECASE)
-OFFSET_LEN_ON_COMP    = re.compile(r"\b(\w+-matnr)\s*\+\s*(\d+)\s*\(\s*(\d+)\s*\)", re.IGNORECASE)
-OFFSET_LEN_ON_VAR     = re.compile(r"\b(\w+)\s*\+\s*(\d+)\s*\(\s*(\d+)\s*\)", re.IGNORECASE)
-CONCATENATE_STMT      = re.compile(r"\bCONCATENATE\b(.+?)\bINTO\b", re.IGNORECASE | re.DOTALL)
-STRING_OP_AND         = re.compile(r"(.+?)\s*&&\s*(.+?)")
-STRING_TEMPLATE       = re.compile(r"\|.*?\{[^}]*\b(matnr|MATNR)\b[^}]*\}\|", re.DOTALL)
-SELECT_INTO_SINGLE    = re.compile(r"\bSELECT\b(?:\s+SINGLE)?\b[^.]*?\bmatnr\b[^.]*?\bINTO\b\s+@?(\w+)\b", re.IGNORECASE | re.DOTALL)
-MOVE_STMT             = re.compile(r"\bMOVE\b\s+(.+?)\s+\bTO\b\s+(\w+)\s*\.", re.IGNORECASE)
-ASSIGNMENT            = re.compile(r"\b(\w+)\s*=\s*([^\.\n]+)\.", re.IGNORECASE)
-COMPARE_STMT          = re.compile(r"\bIF\b\s+(.+?)\.\s*", re.IGNORECASE | re.DOTALL)
-SIMPLE_COMPARISON     = re.compile(r"(\w+(?:-matnr)?)\s*(=|<>|NE|EQ|LT|LE|GT|GE)\s*('?[\w\-]+'?|\w+(?:-matnr)?)", re.IGNORECASE)
+MATNR_COMPON = re.compile(r"\b(\w+)-matnr\b", re.IGNORECASE)
+OFFSET_LEN_ON_COMP = re.compile(r"\b(\w+-matnr)\s*\+\s*(\d+)\s*\(\s*(\d+)\s*\)", re.IGNORECASE)
+OFFSET_LEN_ON_VAR = re.compile(r"\b(\w+)\s*\+\s*(\d+)\s*\(\s*(\d+)\s*\)", re.IGNORECASE)
+CONCATENATE_STMT = re.compile(r"\bCONCATENATE\b(.+?)\bINTO\b", re.IGNORECASE | re.DOTALL)
+STRING_OP_AND = re.compile(r"(.+?)\s*&&\s*(.+?)")
+STRING_TEMPLATE = re.compile(r"\|.*?\{[^}]*\b(matnr|MATNR)\b[^}]*\}\|", re.DOTALL)
+SELECT_INTO_SINGLE = re.compile(
+    r"\bSELECT\b(?:\s+SINGLE)?\b[^.]*?\bmatnr\b[^.]*?\bINTO\b\s+@?(\w+)\b",
+    re.IGNORECASE | re.DOTALL
+)
+MOVE_STMT = re.compile(r"\bMOVE\b\s+(.+?)\s+\bTO\b\s+(\w+)\s*\.", re.IGNORECASE)
+ASSIGNMENT = re.compile(r"\b(\w+)\s*=\s*([^\.\n]+)\.", re.IGNORECASE)
+COMPARE_STMT = re.compile(r"\bIF\b\s+(.+?)\.\s*", re.IGNORECASE | re.DOTALL)
+SIMPLE_COMPARISON = re.compile(
+    r"(\w+(?:-matnr)?)\s*(=|<>|NE|EQ|LT|LE|GT|GE)\s*('?[\w\-]+'?|\w+(?:-matnr)?)",
+    re.IGNORECASE
+)
 
 # Multi-line declaration support (colon header with entries across lines)
 def iter_statements_with_offsets(src: str):
@@ -85,6 +93,7 @@ def iter_statements_with_offsets(src: str):
     if buf:
         yield "".join(buf), start, len(src)
 
+
 def smart_split_commas(s: str):
     parts, cur, q = [], [], False
     for ch in s:
@@ -92,14 +101,19 @@ def smart_split_commas(s: str):
             q = not q
             cur.append(ch)
         elif ch == "," and not q:
-            parts.append("".join(cur).strip()); cur = []
+            parts.append("".join(cur).strip())
+            cur = []
         else:
             cur.append(ch)
     if cur:
         parts.append("".join(cur).strip())
     return [p for p in parts if p]
 
-DECL_HEADER_COLON = re.compile(r"^\s*(DATA|STATICS|CONSTANTS|PARAMETERS)\s*:\s*(.+)$", re.IGNORECASE | re.DOTALL)
+
+DECL_HEADER_COLON = re.compile(
+    r"^\s*(DATA|STATICS|CONSTANTS|PARAMETERS)\s*:\s*(.+)$",
+    re.IGNORECASE | re.DOTALL
+)
 DECL_ENTRY = re.compile(
     r"^\s*(?P<var>\w+)\s*(?:"  # variable name
     r"TYPE\s+(?P<dtype>\w+)(?:\s+LENGTH\s+(?P<len>\d+))?(?:\s+DECIMALS\s+(?P<dec>\d+))?"  # TYPE dddd LENGTH n ...
@@ -113,16 +127,20 @@ DECL_ENTRY = re.compile(
 def line_of_offset(text: str, off: int) -> int:
     return text.count("\n", 0, off) + 1
 
+
 def snippet_at(text: str, start: int, end: int) -> str:
     s = max(0, start - 60)
     e = min(len(text), end + 60)
     return text[s:e].replace("\n", "\\n")
 
+
 def looks_like_matnr_token(tok: str) -> bool:
     return bool(re.search(r"-matnr\b", tok, re.IGNORECASE)) or tok.strip().upper() == "MATNR"
 
+
 # symbol table: var -> {"kind":"char"/"matnr","len":n}
 DECL_SPLIT = re.compile(r"\.", re.DOTALL)
+
 
 def build_symbol_table(full_src: str) -> Dict[str, Dict]:
     st: Dict[str, Dict] = {}
@@ -172,6 +190,7 @@ def build_symbol_table(full_src: str) -> Dict[str, Dict]:
                     st[var] = {"kind": "char", "len": ln}
     return st
 
+
 def _is_matnr_expr(symtab: Dict[str, Dict], expr: str) -> bool:
     expr = (expr or "").strip()
     if looks_like_matnr_token(expr):
@@ -181,6 +200,7 @@ def _is_matnr_expr(symtab: Dict[str, Dict], expr: str) -> bool:
         v = mv.group(1)
         return symtab.get(v.lower(), {}).get("kind") == "matnr"
     return False
+
 
 def is_char_len_lt_40(symtab: Dict[str, Dict], var: str, default_none=True) -> Optional[bool]:
     info = symtab.get((var or "").lower())
@@ -193,6 +213,7 @@ def is_char_len_lt_40(symtab: Dict[str, Dict], var: str, default_none=True) -> O
         return False
     return None
 
+
 # ========= Declaration index (cross-include, multi-line aware) =========
 class DeclSite:
     __slots__ = ("var", "unit_idx", "line", "text")
@@ -203,11 +224,13 @@ class DeclSite:
         self.line = line
         self.text = text
 
+
 DECL_LINE_PATTERNS = [
     re.compile(r"^\s*(DATA|STATICS|CONSTANTS|PARAMETERS)\s*:\s*(\w+)\b.*\.\s*$", re.IGNORECASE),
     re.compile(r"^\s*(DATA|STATICS|CONSTANTS|PARAMETERS)\s+(\w+)\b.*\.\s*$", re.IGNORECASE),
     re.compile(r"^\s*FIELD-SYMBOLS\s*<(\w+)>\b.*\.\s*$", re.IGNORECASE),
 ]
+
 
 def build_declaration_index(units: List[Unit]) -> Dict[str, List[DeclSite]]:
     idx: Dict[str, List[DeclSite]] = {}
@@ -255,6 +278,8 @@ def build_declaration_index(units: List[Unit]) -> Dict[str, List[DeclSite]]:
                     DeclSite(var, uidx, line_of_offset(src, ent_abs_off), ent.strip())
                 )
     return idx
+
+
 def extract_line_of_match(code: str, start: int) -> str:
     lines = code.split("\n")
     pos = 0
@@ -264,45 +289,85 @@ def extract_line_of_match(code: str, start: int) -> str:
             return text.strip()
         pos = next_pos
     return ""
+
+
+def get_line_snippet(text: str, start: int, end: int) -> str:
+    """
+    ORDERBY-style snippet: full logical line containing the match.
+    """
+    line_start = text.rfind("\n", 0, start)
+    if line_start == -1:
+        line_start = 0
+    else:
+        line_start += 1
+
+    line_end = text.find("\n", end)
+    if line_end == -1:
+        line_end = len(text)
+
+    return text[line_start:line_end]
+
+
 # ========= Packaging helpers =========
 def pack_issue(unit: Unit, issue_type, message, severity, start, end, suggestion, meta=None):
+    """
+    ORDERBY-style:
+      - start_line / end_line are absolute
+      - snippet is the full line where match occurs
+      - severity is always 'error' (ignores incoming severity)
+    """
     src = unit.code or ""
+
+    # line number inside this unit code
+    line_in_block = src[:start].count("\n") + 1
+
+    snippet_line = get_line_snippet(src, start, end)
+    snippet_line_count = snippet_line.count("\n") + 1
+
+    starting_line_abs = (unit.start_line or 0) + line_in_block
+    ending_line_abs = starting_line_abs + snippet_line_count
+
     return {
         "pgm_name": unit.pgm_name,
         "inc_name": unit.inc_name,
         "type": unit.type,
         "name": unit.name,
         "class_implementation": unit.class_implementation,
-        "start_line": unit.start_line,
-        "end_line": unit.end_line,
+        "start_line": starting_line_abs,
+        "end_line": ending_line_abs,
         "issue_type": issue_type,
-        "severity": severity,
-        "line": line_of_offset(src, start),
+        "severity": "error",  # force error
+        "line": starting_line_abs,  # keep for mirror logic
         "message": message,
         "suggestion": suggestion or "",
-        "snippet": extract_line_of_match(src, start),
-        # "snippet": snippet_at(src, start, end),
+        "snippet": snippet_line.replace("\n", "\\n"),
         "meta": meta or {}
     }
 
+
 def pack_decl_issue(decl_unit: Unit, decl_line: int, decl_text: str,
                     issue_type: str, message: str, severity: str, suggestion: str, meta=None):
+
+    abs_start = (decl_unit.start_line or 0) + (decl_line - 1)
+
     return {
         "pgm_name": decl_unit.pgm_name,
         "inc_name": decl_unit.inc_name,
         "type": decl_unit.type,
         "name": decl_unit.name,
         "class_implementation": decl_unit.class_implementation,
-        "start_line": decl_unit.start_line,
-        "end_line": decl_unit.end_line,
+        "start_line": abs_start,
+        "end_line": abs_start,
         "issue_type": issue_type,
-        "severity": severity,
-        "line": decl_line,
+        "severity": "error",
+        "line": abs_start,
         "message": message,
         "suggestion": suggestion or "",
         "snippet": decl_text,
         "meta": meta or {}
     }
+
+
 
 def _emit_decl_mirrors_for_dest(dest_token: str,
                                 usage_issue_type: str,
@@ -321,17 +386,24 @@ def _emit_decl_mirrors_for_dest(dest_token: str,
     for d in decls:
         decl_unit = units[d.unit_idx]
         if too_small is True:
-            msg = f"Declaration of '{dest_token}' appears too small for 40-char MATNR used in {usage_unit.inc_name}/{usage_unit.name} at line {usage_line}."
-            sev = usage_severity  # likely 'error'
+            msg = (
+                f"Declaration of '{dest_token}' appears too small for 40-char MATNR used in "
+                f"{usage_unit.inc_name}/{usage_unit.name} at line {usage_line}."
+            )
+            sev = usage_severity  # ignored in pack_decl_issue (always error)
             sug = "Change declaration to TYPE MATNR (40) or widen CHAR to 40."
             itype = "DeclarationMatnrSizeRisk"
         else:
-            msg = f"Declaration of '{dest_token}' may be insufficient for 40-char MATNR used in {usage_unit.inc_name}/{usage_unit.name} at line {usage_line} (destination type unknown)."
+            msg = (
+                f"Declaration of '{dest_token}' may be insufficient for 40-char MATNR used in "
+                f"{usage_unit.inc_name}/{usage_unit.name} at line {usage_line} (destination type unknown)."
+            )
             sev = "warning" if usage_severity != "info" else "info"
             sug = "Verify declaration supports 40 chars (TYPE MATNR)."
             itype = "DeclarationMatnrCapacityUnknown"
         mirror = pack_decl_issue(decl_unit, d.line, d.text, itype, msg, sev, sug, {})
         mirror_buckets.setdefault(d.unit_idx, []).append(mirror)
+
 
 # ========= Scanner =========
 def scan_unit(unit_idx: int,
@@ -500,6 +572,7 @@ def scan_unit(unit_idx: int,
     res["matnr_findings"] = findings
     return res
 
+
 # ========= Orchestrator =========
 def analyze_units(units: List[Unit]) -> List[Dict[str, Any]]:
     # Build global symbol table (multi-include) and declaration index with exact lines
@@ -518,6 +591,7 @@ def analyze_units(units: List[Unit]) -> List[Dict[str, Any]]:
         if mirrors and uidx < len(out):
             out[uidx].setdefault("matnr_findings", []).extend(mirrors)
     return out
+
 
 # ------------------------------------------------------------
 # FINAL-FORMAT RESPONSE BUILDER (like Credit Master style)
@@ -540,8 +614,8 @@ def build_response(unit: Unit, issues: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "incl_name": unit.inc_name,
                 "types": unit.type,
                 "blockname": unit.name,
-                "starting_line": i.get("line", 0),
-                "ending_line": i.get("line", 0),
+                "starting_line": i.get("start_line", 0),
+                "ending_line": i.get("end_line", 0),
                 "issues_type": f"MATNR_{i.get('issue_type')}" if i.get("issue_type") else "MATNR",
                 "severity": i.get("severity"),
                 "message": i.get("message"),
@@ -551,6 +625,7 @@ def build_response(unit: Unit, issues: List[Dict[str, Any]]) -> Dict[str, Any]:
             for i in (issues or [])
         ]
     }
+
 
 # ------------------------------------------------------------
 # ENDPOINTS (Final Format)
@@ -562,6 +637,7 @@ def remediate_single(unit: Unit):
     issues = results[0].get("matnr_findings") or []
     return [build_response(unit, issues)]
 
+
 @app.post("/remediate-array")
 def remediate_array(units: List[Unit]):
     output = []
@@ -570,6 +646,7 @@ def remediate_array(units: List[Unit]):
         issues = results[idx].get("matnr_findings") or []
         output.append(build_response(u, issues))
     return output
+
 
 @app.get("/health")
 def health():
