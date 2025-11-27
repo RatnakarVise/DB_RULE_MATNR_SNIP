@@ -1,0 +1,12 @@
+[
+  {
+    "pgm_name": "ZMATNR_TEST",
+    "inc_name": "ZMATNR_TEST",
+    "type": "PROG",
+    "name": "MAIN",
+    "class_implementation": "",
+    "start_line": 150,
+    "end_line": 200,
+    "code": "DATA lv_mat TYPE c LENGTH 18.\nDATA lv_mat2 TYPE c LENGTH 10.\nDATA lt_mara TYPE TABLE OF mara.\nSELECT \nSINGLE matnr\n FROM mara INTO lv_mat.\nMOVE lv_mat TO lv_mat2.\nCONCATENATE lv_mat lv_mat2 INTO lv_mat.\nIF lv_mat2 = lv_mat.\nWRITE lv_mat2.\nENDIF."
+  }
+]
